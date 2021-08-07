@@ -227,6 +227,8 @@
   (apply union
          (for [column columns
                row rows
+               ; this is what controls the placement of the two keys next to the
+               ; thumb cluster
                :when (or (.contains [2 3] column)
                          (not= row lastrow))]
            (->> shape
@@ -534,16 +536,17 @@
          (screw-insert use-cap 0 (+ lastrow 1) bottom-radius top-radius height [0 0.8 bottom-height]))) ;bottom middle
 
 ; Hole Depth Y: 4.4
-(def screw-insert-height 4)
+(def screw-insert-height 4.5)
 
 ; Hole Diameter C: 4.1-4.4
-(def screw-insert-bottom-radius (/ 4.0 2))
-(def screw-insert-top-radius (/ 3.9 2))
-(def screw-insert-holes (screw-insert-all-shapes false screw-insert-bottom-radius screw-insert-top-radius screw-insert-height))
+(def screw-insert-diameter 4.5)
+(def screw-insert-bottom-radius (/ screw-insert-diameter 2))
+(def screw-insert-top-radius (/ (- screw-insert-diameter 0.1) 2))
+(def screw-insert-holes (screw-insert-all-shapes true screw-insert-bottom-radius screw-insert-top-radius screw-insert-height))
 
 ; Wall Thickness W:\t1.65
 (def screw-insert-outers (screw-insert-all-shapes true (+ screw-insert-bottom-radius 1.65) (+ screw-insert-top-radius 1.65) (+ screw-insert-height 1.5)))
-(def screw-insert-screw-holes (screw-insert-all-shapes false 1.7 1.7 350))
+(def screw-insert-screw-holes (screw-insert-all-shapes true 1.7 1.7 350))
 
 
 
@@ -635,7 +638,7 @@
   (translate [0 0 (- layer-height screw-head-height)]
              (screw-insert-all-shapes false 1 1 screw-head-height)))
 
-; (spit "things/test2.scad" (write-scad (union bottom-screw-holes-head bottom-screw-holes-top) ))
+(spit "things/test2.scad" (write-scad (union bottom-screw-holes-head bottom-screw-holes-top) ))
 (spit "things/right-plate-print.scad"
       (write-scad
         (difference
