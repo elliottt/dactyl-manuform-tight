@@ -513,23 +513,25 @@
 
 
 ; Screw insert definition & position
-(defn screw-insert-shape [bottom-radius top-radius height]
+(defn screw-insert-shape [use-cap bottom-radius top-radius height]
   (->> (binding [*fn* 30]
-         (union (cylinder [bottom-radius top-radius] height)
-                (translate [0 0 (/ height 2)] (sphere top-radius))))))
+         (let [main (cylinder [bottom-radius top-radius] height)]
+         (if use-cap
+             (union main (translate [0 0 (/ height 2)] (sphere top-radius)))
+             main)))))
 
-(defn screw-insert [column row bottom-radius top-radius height offset]
+(defn screw-insert [use-cap column row bottom-radius top-radius height offset]
   (let [position (key-position column row [0 0 0])]
-    (->> (screw-insert-shape bottom-radius top-radius height)
+    (->> (screw-insert-shape use-cap bottom-radius top-radius height)
          (translate (map + offset [(first position) (second position) (/ height 2)])))))
 
-(defn screw-insert-all-shapes [bottom-radius top-radius height]
-  (union (screw-insert 2 0 bottom-radius top-radius height [1.8 9 bottom-height]) ; top middle
-         (screw-insert 0 0 bottom-radius top-radius height [-10.2 -5 bottom-height]) ; bottom left
-         (screw-insert 0 (- lastrow 1) bottom-radius top-radius height [-8.5 -10 bottom-height]) ; top left
-         (screw-insert (- lastcol 1) lastrow bottom-radius top-radius height [0 -9.8 bottom-height]) ; bottom right
-         (screw-insert lastcol 0 bottom-radius top-radius height [1 9 bottom-height]) ; top right
-         (screw-insert 0 (+ lastrow 1) bottom-radius top-radius height [0 0.8 bottom-height]))) ;bottom middle
+(defn screw-insert-all-shapes [use-cap bottom-radius top-radius height]
+  (union (screw-insert use-cap 2 0 bottom-radius top-radius height [1.8 9 bottom-height]) ; top middle
+         (screw-insert use-cap 0 0 bottom-radius top-radius height [-10.2 -5 bottom-height]) ; bottom left
+         (screw-insert use-cap 0 (- lastrow 1) bottom-radius top-radius height [-8.5 -10 bottom-height]) ; top left
+         (screw-insert use-cap (- lastcol 1) lastrow bottom-radius top-radius height [0 -9.8 bottom-height]) ; bottom right
+         (screw-insert use-cap lastcol 0 bottom-radius top-radius height [1 9 bottom-height]) ; top right
+         (screw-insert use-cap 0 (+ lastrow 1) bottom-radius top-radius height [0 0.8 bottom-height]))) ;bottom middle
 
 ; Hole Depth Y: 4.4
 (def screw-insert-height 4)
@@ -537,11 +539,11 @@
 ; Hole Diameter C: 4.1-4.4
 (def screw-insert-bottom-radius (/ 4.0 2))
 (def screw-insert-top-radius (/ 3.9 2))
-(def screw-insert-holes (screw-insert-all-shapes screw-insert-bottom-radius screw-insert-top-radius screw-insert-height))
+(def screw-insert-holes (screw-insert-all-shapes false screw-insert-bottom-radius screw-insert-top-radius screw-insert-height))
 
 ; Wall Thickness W:\t1.65
-(def screw-insert-outers (screw-insert-all-shapes (+ screw-insert-bottom-radius 1.65) (+ screw-insert-top-radius 1.65) (+ screw-insert-height 1.5)))
-(def screw-insert-screw-holes (screw-insert-all-shapes 1.7 1.7 350))
+(def screw-insert-outers (screw-insert-all-shapes true (+ screw-insert-bottom-radius 1.65) (+ screw-insert-top-radius 1.65) (+ screw-insert-height 1.5)))
+(def screw-insert-screw-holes (screw-insert-all-shapes false 1.7 1.7 350))
 
 
 
@@ -627,11 +629,11 @@
 (def screw-head-height 1)
 (def layer-height 0.2)
 (def bottom-screw-holes-head
-  (translate [0 0 (- bottom-plate-half)] (screw-insert-all-shapes 2.25 2.25 screw-head-height)))
+  (translate [0 0 (- (+ 2 layer-height))] (screw-insert-all-shapes false 2.25 2.25 (+ layer-height screw-head-height))))
 ;keep a layer thickness so we can bridge over without supports
 (def bottom-screw-holes-top
   (translate [0 0 (- layer-height screw-head-height)]
-             (screw-insert-all-shapes 1 1 (- bottom-height screw-head-height))))
+             (screw-insert-all-shapes false 1 1 screw-head-height)))
 
 ; (spit "things/test2.scad" (write-scad (union bottom-screw-holes-head bottom-screw-holes-top) ))
 (spit "things/right-plate-print.scad"
@@ -639,11 +641,11 @@
         (difference
           bottom-plate
           (union
-            bottom-wall-usb-holder
             key-space-below
             thumb-space-below
             bottom-screw-holes-head
-            bottom-screw-holes-top))))
+            bottom-screw-holes-top
+            ))))
 
 ; (spit "things/right-plate-cut.scad"
 ;       (write-scad
@@ -656,7 +658,7 @@
 ;                        (union
 ;                          bottom-wall-usb-holder
 ;                          thumb-space-below
-;                          (screw-insert-all-shapes 1 1 50)))))))
+;                          (screw-insert-all-shapes false 1 1 50)))))))
 
 (spit "things/test.scad"
       (write-scad
